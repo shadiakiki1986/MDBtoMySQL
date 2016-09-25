@@ -72,3 +72,6 @@ for table in $tables;
 
 done;
 
+# Todo: Fix the mdb-schema output, to create automatically all the fields in the tables.
+# Remove stuff I dont want.
+#query=$(mdb-schema db.mdb  | sed "s/type.*/VARCHAR (255)/g" | tr '[' ' ' | tr ']' ' ' | sed 's/Long\ Integer/INT/g' | sed 's/Integer/INT/g' | sed "s/Text \(.*\)/VARCHAR (255)/g" | tr '/' '_' | sed "s/Memo_Hyperlink/VARCHAR (255)/g");
