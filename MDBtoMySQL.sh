@@ -74,4 +74,23 @@ done;
 
 # Todo: Fix the mdb-schema output, to create automatically all the fields in the tables.
 # Remove stuff I dont want.
-#query=$(mdb-schema db.mdb  | sed "s/type.*/VARCHAR (255)/g" | tr '[' ' ' | tr ']' ' ' | sed 's/Long\ Integer/INT/g' | sed 's/Integer/INT/g' | sed "s/Text \(.*\)/VARCHAR (255)/g" | tr '/' '_' | sed "s/Memo_Hyperlink/VARCHAR (255)/g");
+# query=$(mdb-schema db.mdb  | sed "s/type.*/VARCHAR (255)/g" | tr '[' ' ' | tr ']' ' ' | sed 's/Long\ Integer/INT/g' | sed 's/Integer/INT/g' | sed "s/Text \(.*\)/VARCHAR (255)/g" | tr '/' '_' | sed "s/Memo_Hyperlink/VARCHAR (255)/g");
+
+# Building the query.
+# Todo: Split the string on "-- That file uses encoding UTF-8"
+
+mdb-schema db.mdb  \
+| sed -r 's/(\[[a-zA-Z0-9Α-Ωα-ω]+)(\ )/\1_/g' \
+| sed "s/type.*/VARCHAR (255),/g" \
+| sed "s/\]//g" \
+| sed "s/\[//g" \
+| tr '/' '_' \
+| sed 's/Long\ Integer/INT UNSIGNED/g' \
+| sed 's/Integer/INT UNSIGNED/g' \
+| sed -r "s/Text \(.+\)/VARCHAR (255)/g" \
+| sed "s/Memo_Hyperlink\ (.*)/VARCHAR (255)/g" \
+| sed "s/ID/id/g" \
+| sed "s/Boolean/TINYINT UNSIGNED/g" \
+| sed "s/DateTime/DATE/g" \
+| sed "s/id INT/id INT UNSIGNED AUTO INCEMENT NOT NULL/g" \
+| sed "s/[[:space:]]\+/\ /g"
