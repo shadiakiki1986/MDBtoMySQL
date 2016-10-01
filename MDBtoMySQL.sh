@@ -112,22 +112,3 @@ echo "";
 echo "<------------------------------------------------------------------------>"
 echo "           The tables of \"$db_to_create\" were successfully created."
 echo "<------------------------------------------------------------------------>"
-
-# Display specific lines of file.
-# http://unix.stackexchange.com/questions/47407/cat-line-x-to-line-y-on-a-huge-file
-# mdb-schema db.mdb  \
-# | sed -r 's/(\[[a-zA-Z0-9Α-Ωα-ω]+)(\ )/\1_/g' \
-# | sed "s/type.*/VARCHAR (255),/g" \
-# | sed "s/\]//g" \
-# | sed "s/\[//g" \
-# | tr '/' '_' \
-# | sed 's/Long\ Integer/INT UNSIGNED/g' \
-# | sed 's/Integer/INT UNSIGNED/g' \
-# | sed -r "s/Text \(.+\)/VARCHAR (255)/g" \
-# | sed "s/Memo_Hyperlink\ (.*)/VARCHAR (255)/g" \
-# | sed "s/ID/id/g" \
-# | sed "s/Boolean/TINYINT UNSIGNED/g" \
-# | sed "s/DateTime/DATE/g" \
-# | sed "s/id INT/id INT UNSIGNED AUTO INCEMENT NOT NULL/g" \
-# | sed "s/[[:space:]]\+/\ /g" \
-# | awk 'NR >= 10'
