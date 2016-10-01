@@ -31,9 +31,22 @@ echo "";
 echo "Please, provide the name of the MySQL user.";
 read user;
 
+if [[ "$user" =~ ([[:punct:]]+ || [[:space:]]+) ]]; then
+	echo "No special characters or spaces are allowed in the username.";
+	echo "Exiting.";
+	exit 1;
+fi
+
 echo "";
 echo "Please, provide the password of the MySQL user.";
 read password;
+
+
+if [[ "$password" =~ [[:space:]]+ ]]; then
+	echo "No spaces are allowed in the password.";
+	echo "Exiting.";
+	exit 1;
+fi
 
 echo "";
 echo "Please, provide the name of the database that will be created.";
