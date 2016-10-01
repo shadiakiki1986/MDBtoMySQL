@@ -1,5 +1,17 @@
 #!/usr/bin/env bash
 
+# First row regex:
+# mdb-export db.mdb actors | sed  's/\(.\+\)/INSERT INTO actors (\1) VALUES/g' | sed 's/([0-9]\+,/(/g' | sed 's/\"//g'
+
+IFS=' ' read -ra tables <<< "$(mdb-tables db.mdb)"
+for table in "${tables[@]}"; do
+    echo "$table";
+	# echo "$(mdb-export "db.mdb" "$table" | sed "s/[0-9]\+,/aaa/g")" > "$table.csv";
+	echo "$(mdb-export "db.mdb" "$table")" > "$table.csv";
+	echo "";
+done
+exit
+
 # Table 2-1. MDB Utilities
 # Name	Description
 # mdb-tables	list tables in the specified file
@@ -54,6 +66,34 @@ if [[ ! -f "$db_to_read" ]]; then
 	echo "Aborting.";
 	exit 1;
 fi
+
+
+
+# Get the tables to start exporting the data.
+# tables=$(mdb-tables $db_to_read);
+
+# IFS=' ' read -ra tables <<< "$(mdb-tables $db_to_read)"
+# for table in "${tables[@]}"; do
+#     echo "$table";
+# 	 $(mdb-export "$db_to_read" "$table");
+# 	echo "";
+# done
+
+
+# for table in "$tables"; do
+# 	echo "$table";
+# 	echo $(mdb-export "$db_to_read" "$table");
+# 	echo "";
+# done
+# exit
+
+
+
+
+
+
+
+
 
 # Check the name provided.
 if [[ "$db_to_read" =~ [\],!,\\,@,#,$,%,^,\&,\*,\(,\),\?,\<,\>,{,},\[]+ ]] || [[ "$db_to_read" =~ [[:space:]]+ ]]; then
@@ -128,3 +168,9 @@ echo "";
 echo "<------------------------------------------------------------------------>"
 echo "           The tables of the \"$db_to_create\" database were successfully created."
 echo "<------------------------------------------------------------------------>"
+
+# Get the tables to start exporting the data.
+tables=$(mdb-tables $db_to_read);
+for table in tables; do
+	echo "$table";
+done
