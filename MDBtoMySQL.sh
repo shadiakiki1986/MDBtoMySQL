@@ -40,6 +40,13 @@ echo "Make sure to provide the full path,
 if the file is not in the current directory.";
 read db_to_read;
 
+# Check the permissions/owner.
+if [[ ! -O "$db_to_read" ]]; then
+	echo "You are not the owner of this file. Aborting the operation.";
+	echo "";
+	exit 1;
+fi
+
 # Check if the file exists.
 if [[ ! -f "$db_to_read" ]]; then
 	echo "The file was not found.";
