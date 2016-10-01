@@ -19,9 +19,10 @@ echo "-- If not, install them with \"sudo apt-get install mdbtools\" in a Debian
 echo "-- or Debian-based system.";
 echo "-- -----------------------------------------------------------------------";
 
-
+TOOLS=$(which scribus >/dev/null 2>&1);
 # Check if mdbtools are installed.
-
+command -v mdb-tables >/dev/null 2>&1 || { echo >&2 "I require mdb-tools but they are not installed. Aborting."; exit 1; }
+command -v mysql >/dev/null 2>&1 || { echo >&2 "I require MySQL but it is not installed. Aborting."; exit 1; }
 
 # Get all the info you need.
 # sleep 1;
@@ -59,18 +60,13 @@ echo "";
 echo "Please, provide the name of the database that will be created.";
 echo "Do not use spaces or any special characters:";
 read db_to_create;
-# echo "$db_to_create";
 
+# Check the name provided.
 if [[ "$db_to_create" =~ [\],!,\\,@,#,$,%,^,\&,\*,\(,\),\?,\<,\>,{,},\[]+ ]] || [[ "$db_to_create" =~ [[:space:]]+ ]]; then
 	echo "No special characters or spaces are allowed in the database name.";
 	echo "Aborting.";
 	exit 1;
 fi
-
-# Read the tables from the file.
-tables=$(mdb-tables $db_to_read);
-#tables=$(mdb-tables $db_to_read | tr " "  "\n");
-#for table in $tables; do echo "$table"; done;
 
 # Create the database.
 echo "";
@@ -91,6 +87,7 @@ else
 	exit 1;
 fi
 
+# Create the database.
 mysql -u$user -p$password -e "DROP DATABASE IF EXISTS $db_to_create";
 mysql -u$user -p$password -e "CREATE DATABASE $db_to_create DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;";
 echo "";
@@ -98,20 +95,8 @@ echo "<------------------------------------------------------------------------>
 echo "           Database \"$db_to_create\" was successfully created."
 echo "<------------------------------------------------------------------------>"
 
-# Create the tables.
-# for table in $tables;
-#     do mysql -uroot -proot -e "CREATE TABLE $db_to_create.$table(id INT NOT NULL AUTO_INCREMENT, PRIMARY KEY ( id ))";
-
-#     echo "";
-#     echo "<------------------------------------------------------------------------>"
-#     echo "           Table \"$table\" was successfully created."
-#     echo "<------------------------------------------------------------------------>"
-
-# done;
-
-# Todo: Fix the mdb-schema output, to create automatically all the fields in the tables.
-# Remove stuff I dont want.
-query=$(
+# Create the query that will create the tables.
+sql_query=$(
 mdb-schema db.mdb  \
 | sed -r 's/(\[[a-zA-Z0-9]+)(\ )/\1_/g' \
 | sed "s/type.*/VARCHAR (255),/g" \
@@ -130,8 +115,8 @@ mdb-schema db.mdb  \
 | awk 'NR >= 10'
 );
 
-
-mysql -u"$user" -p"$password" -e "USE $db_to_create $query";
+# Execute the query.
+mysql -u"$user" -p"$password" -e "USE $db_to_create $sql_query";
 echo "";
 echo "<------------------------------------------------------------------------>"
 echo "           The tables of the \"$db_to_create\" database were successfully created."
