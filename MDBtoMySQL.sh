@@ -1,39 +1,10 @@
 #!/usr/bin/env bash
 
-# Errors: /usr/bin/mysql: Argument list too long
-# mysql -uroot -proot -e "LOAD DATA INFILE '/home/va/git_projects/MDBtoMySQL/records.csv' INTO TABLE movies.records FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n' IGNORE 1 ROWS"
-
-db_to_read='db.mdb';
-db_to_create='movies';
-user='root';
-password='root';
-
-# IFS=' ' read -ra tables <<< "$(mdb-tables "$db_to_read")"
-# for table in "${tables[@]}"; do
-# 	# Create a csv file and modify the first line.
-# 	mdb-export db.mdb "$table" > "$table".csv && sed -i "1 s/\(.\+\)/INSERT INTO "$table" (\1) VALUES/g" "$table".csv;
-
-# 	# Get the total line number, to use it for the lines between the first and the last.
-# 	numbers=$(cat "$table.csv" | wc -l);
-
-# 	# Remove parentheses.
-# 	# sed -i '2,$ s/(/[/g' "$table".csv; 
-# 	# sed -i '2,$ s/)/]/g' "$table".csv;
-
-# 	# Modify the lines between the first and the last.
-# 	sed -i "2,$((numbers-1)) s/\(.\+\)/\(\1),/g" "$table".csv;
-
-# 	# Modify the last line.
-# 	sed -i '$ s/\(.\+\)/\(\1);/g' "$table".csv;
-
-# 	# Lowercase any ID.
-# 	sed -i 's/ID/id/g' "$table".csv;
-
-# 	# Execute mysql queries.
-# 	mysql -u"$user" -p"$password" -e "TRUNCATE table $db_to_create.$table";
-# 	mysql -u"$user" -p"$password" -e "USE $db_to_create; $(cat $table.csv);";
-# done
-# exit
+# Stuff for testing.
+# db_to_read='db.mdb';
+# db_to_create='movies';
+# user='root';
+# password='root';
 
 # Table 2-1. MDB Utilities
 # Name	Description
@@ -89,34 +60,6 @@ if [[ ! -f "$db_to_read" ]]; then
 	echo "Aborting.";
 	exit 1;
 fi
-
-
-
-# Get the tables to start exporting the data.
-# tables=$(mdb-tables $db_to_read);
-
-# IFS=' ' read -ra tables <<< "$(mdb-tables $db_to_read)"
-# for table in "${tables[@]}"; do
-#     echo "$table";
-# 	 $(mdb-export "$db_to_read" "$table");
-# 	echo "";
-# done
-
-
-# for table in "$tables"; do
-# 	echo "$table";
-# 	echo $(mdb-export "$db_to_read" "$table");
-# 	echo "";
-# done
-# exit
-
-
-
-
-
-
-
-
 
 # Check the name provided.
 if [[ "$db_to_read" =~ [\],!,\\,@,#,$,%,^,\&,\*,\(,\),\?,\<,\>,{,},\[]+ ]] || [[ "$db_to_read" =~ [[:space:]]+ ]]; then
