@@ -25,7 +25,6 @@ echo "-- If not, install them with \"sudo apt-get install mdbtools\" in a Debian
 echo "-- or Debian-based system.";
 echo "-- -----------------------------------------------------------------------";
 
-TOOLS=$(which scribus >/dev/null 2>&1);
 # Check if mdbtools are installed.
 command -v mdb-tables >/dev/null 2>&1 || { echo >&2 "I require mdb-tools but they are not installed. Aborting."; exit 1; }
 command -v mysql >/dev/null 2>&1 || { echo >&2 "I require MySQL but it is not installed. Aborting."; exit 1; }
