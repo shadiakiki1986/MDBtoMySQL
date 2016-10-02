@@ -168,7 +168,7 @@ echo "<------------------------------------------------------------------------>
 # Create the query that will create the tables.
 sql_query=$(
 mdb-schema db.mdb  \
-| sed 's/^)/) ENGINE=InnoDB DEFAULT CHARSET=utf8/g' \
+| sed 's/^)/,PRIMARY KEY (id)) ENGINE=InnoDB DEFAULT CHARSET=utf8/g' \
 | sed -r 's/(\[[a-zA-Z0-9]+)(\ )/\1_/g' \
 | sed "s/type.*/VARCHAR (255),/g" \
 | sed "s/\]//g" \
@@ -181,7 +181,7 @@ mdb-schema db.mdb  \
 | sed "s/ID/id/g" \
 | sed "s/Boolean/TINYINT UNSIGNED/g" \
 | sed "s/DateTime/DATE/g" \
-| sed "s/id INT/id INT UNSIGNED AUTO INCEMENT NOT NULL/g" \
+| sed "s/id INT UNSIGNED/id INT UNSIGNED AUTO INCEMENT NOT NULL/g" \
 | sed "s/[[:space:]]\+/\ /g" \
 | awk 'NR >= 10'
 );
