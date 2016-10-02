@@ -221,4 +221,7 @@ for table in "${tables[@]}"; do
 	# Execute mysql queries.
 	mysql -u"$user" -p"$password" -e "TRUNCATE table $db_to_create.$table";
 	mysql -u"$user" -p"$password" -e "USE $db_to_create; $(cat $table.csv);";
+
+	# Remove the temp files.
+	rm "$table".csv; 
 done
