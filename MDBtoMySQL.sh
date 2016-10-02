@@ -181,7 +181,7 @@ mdb-schema db.mdb  \
 | sed "s/ID/id/g" \
 | sed "s/Boolean/TINYINT UNSIGNED/g" \
 | sed "s/DateTime/DATE/g" \
-| sed "s/id INT UNSIGNED/id INT UNSIGNED AUTO INCEMENT NOT NULL/g" \
+| sed "s/id INT UNSIGNED/id INT UNSIGNED AUTO_INCREMENT NOT NULL/g" \
 | sed "s/[[:space:]]\+/\ /g" \
 | awk 'NR >= 10'
 );
