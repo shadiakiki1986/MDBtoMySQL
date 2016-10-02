@@ -8,32 +8,32 @@ db_to_create='movies';
 user='root';
 password='root';
 
-IFS=' ' read -ra tables <<< "$(mdb-tables "$db_to_read")"
-for table in "${tables[@]}"; do
-	# Create a csv file and modify the first line.
-	mdb-export db.mdb "$table" > "$table".csv && sed -i "1 s/\(.\+\)/INSERT INTO "$table" (\1) VALUES/g" "$table".csv;
+# IFS=' ' read -ra tables <<< "$(mdb-tables "$db_to_read")"
+# for table in "${tables[@]}"; do
+# 	# Create a csv file and modify the first line.
+# 	mdb-export db.mdb "$table" > "$table".csv && sed -i "1 s/\(.\+\)/INSERT INTO "$table" (\1) VALUES/g" "$table".csv;
 
-	# Get the total line number, to use it for the lines between the first and the last.
-	numbers=$(cat "$table.csv" | wc -l);
+# 	# Get the total line number, to use it for the lines between the first and the last.
+# 	numbers=$(cat "$table.csv" | wc -l);
 
-	# Remove parentheses.
-	# sed -i '2,$ s/(/[/g' "$table".csv; 
-	# sed -i '2,$ s/)/]/g' "$table".csv;
+# 	# Remove parentheses.
+# 	# sed -i '2,$ s/(/[/g' "$table".csv; 
+# 	# sed -i '2,$ s/)/]/g' "$table".csv;
 
-	# Modify the lines between the first and the last.
-	sed -i "2,$((numbers-1)) s/\(.\+\)/\(\1),/g" "$table".csv;
+# 	# Modify the lines between the first and the last.
+# 	sed -i "2,$((numbers-1)) s/\(.\+\)/\(\1),/g" "$table".csv;
 
-	# Modify the last line.
-	sed -i '$ s/\(.\+\)/\(\1);/g' "$table".csv;
+# 	# Modify the last line.
+# 	sed -i '$ s/\(.\+\)/\(\1);/g' "$table".csv;
 
-	# Lowercase any ID.
-	sed -i 's/ID/id/g' "$table".csv;
+# 	# Lowercase any ID.
+# 	sed -i 's/ID/id/g' "$table".csv;
 
-	# Execute mysql queries.
-	mysql -u"$user" -p"$password" -e "TRUNCATE table $db_to_create.$table";
-	mysql -u"$user" -p"$password" -e "USE $db_to_create; $(cat $table.csv);";
-done
-exit
+# 	# Execute mysql queries.
+# 	mysql -u"$user" -p"$password" -e "TRUNCATE table $db_to_create.$table";
+# 	mysql -u"$user" -p"$password" -e "USE $db_to_create; $(cat $table.csv);";
+# done
+# exit
 
 # Table 2-1. MDB Utilities
 # Name	Description
@@ -194,7 +194,31 @@ echo "           The tables of the \"$db_to_create\" database were successfully 
 echo "<------------------------------------------------------------------------>"
 
 # Get the tables to start exporting the data.
-tables=$(mdb-tables $db_to_read);
-for table in tables; do
-	echo "$table";
+IFS=' ' read -ra tables <<< "$(mdb-tables "$db_to_read")"
+for table in "${tables[@]}"; do
+	# Create a csv file and modify the first line.
+	mdb-export db.mdb "$table" > "$table".csv && sed -i "1 s/\(.\+\)/INSERT INTO "$table" (\1) VALUES/g" "$table".csv;
+
+	# Get the total line number, to use it for the lines between the first and the last.
+	numbers=$(cat "$table.csv" | wc -l);
+
+	# Remove parentheses.
+	# sed -i '2,$ s/(/[/g' "$table".csv; 
+	# sed -i '2,$ s/)/]/g' "$table".csv;
+
+	# Modify the lines between the first and the last.
+	sed -i "2,$((numbers-1)) s/\(.\+\)/\(\1),/g" "$table".csv;
+
+	# Modify the last line.
+	sed -i '$ s/\(.\+\)/\(\1);/g' "$table".csv;
+
+	# Lowercase any ID.
+	sed -i 's/ID/id/g' "$table".csv;
+	
+	# Remove times form former Datetime fields.
+	sed -i 's/\ 00:00:00//g' "$table".csv;
+
+	# Execute mysql queries.
+	mysql -u"$user" -p"$password" -e "TRUNCATE table $db_to_create.$table";
+	mysql -u"$user" -p"$password" -e "USE $db_to_create; $(cat $table.csv);";
 done
