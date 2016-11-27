@@ -1,10 +1,12 @@
 sudo: required
+language:
+- ruby
 
 services:
 - docker
 
-before_install:
 # https://hub.docker.com/_/mysql/
+before_install:
 - docker run -d \
   -p 3306:3306 \
   -e MYSQL_RANDOM_ROOT_PASSWORD=yes \
@@ -17,7 +19,11 @@ before_install:
 #  -e MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD 
 
 install:
-- [ ! -f Campaign_Template1.mdb ]; then wget http://www.arialsoftware.com/uploads/9/1/8/3/9183466/campaign_template1.zip && unzip campaign_template1.zip && rm campaign_template1.zip; fi
+- if [ ! -f Campaign_Template1.mdb ]; then
+    wget "http://www.arialsoftware.com/uploads/9/1/8/3/9183466/campaign_template1.zip"
+    unzip campaign_template1.zip
+    rm campaign_template1.zip
+  fi
 - apt-get install mdbtools mysql-client
 
 before_script:
@@ -36,9 +42,9 @@ script:
 after_success:
 - docker ps|grep mysql|awk '{print "docker stop " $1}'|bash
 
+#  - MYSQL_ROOT_PASSWORD=my-secret-pw
 env:
   global:
-#  - MYSQL_ROOT_PASSWORD=my-secret-pw
   - MYSQL_USER=ffaFingerprints
   - MYSQL_PASSWORD=fp1298
   - MYSQL_DATABASE=movies
