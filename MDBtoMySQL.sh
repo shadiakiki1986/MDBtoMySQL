@@ -29,7 +29,7 @@
 # mdb-schema	generate schema DDL for the specified file
 # mdb-export	generate CSV style output for a table
 
-#set -e
+set -e
 
 echo "-- -----------------------------------------------------------------------";
 echo "-- MDBtoSQL";
@@ -176,13 +176,15 @@ fi
 # Create the query that will create the tables.
 mdb-schema $db_to_read mysql > .schema.txt.new
 
-# just alert if schema changed
-if [ -f ".schema.txt" ]; then
-  diff .schema.txt .schema.txt.new 2>&1 > /dev/null
-  if [ $? -ne 0 ]; then
-    echo "schema changed!!!"
-  fi
-fi
+# alert if schema changed
+# doesnt work with set -e on top
+#if [ -f ".schema.txt" ]; then
+#  diff .schema.txt .schema.txt.new 2>&1 > /dev/null
+#  if [ $? -ne 0 ]; then
+#    echo "schema changed!!!"
+#  fi
+#fi
+
 mv .schema.txt.new .schema.txt
 
 # drop tables

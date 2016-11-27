@@ -25,7 +25,7 @@ before_install:
 #  -e MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD 
 
 before_script:
-- sleep 10 # wait till mysql server is done initializing
+- sleep 30 # wait till mysql server is done initializing
 - bash MDBtoMySQL.sh
   -m Campaign_Template.mdb
   -d $MYSQL_DATABASE
