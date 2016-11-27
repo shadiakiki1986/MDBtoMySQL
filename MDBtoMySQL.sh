@@ -87,7 +87,7 @@ else
 
     # http://stackoverflow.com/a/14203146/4126114
     # http://mywiki.wooledge.org/BashFAQ/035#getopts
-    while getopts "m:d:u:p:h:" opt; do
+    while getopts "m:d:u:p:h:g:" opt; do
         case "$opt" in
             m)  db_to_read=$OPTARG
                 ;;

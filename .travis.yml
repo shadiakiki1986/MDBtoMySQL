@@ -20,14 +20,18 @@ install:
 - [ ! -f Campaign_Template1.mdb ]; then wget http://www.arialsoftware.com/uploads/9/1/8/3/9183466/campaign_template1.zip && unzip campaign_template1.zip && rm campaign_template1.zip; fi
 - apt-get install mdbtools mysql-client
 
-script:
+before_script:
 - bash MDBtoMySQL.sh \
   -m Campaign_Template.mdb \
   -d $MYSQL_DATABASE \
   -u $MYSQL_USER \
   -p $MYSQL_PASSWORD \
-  -h 127.0.0.1
+  -h 127.0.0.1 \
   -g acc_monitor_log # CHECKINOUT
+
+script:
+- test `mysql --host=127.0.0.1 --user=$MYSQL_USER --password=$MYSQL_PASSWORD $MYSQL_DATABASE -e "select count(*) from information_schema.TABLES where TABLE_NAME='Campaign_Table'"`  -BN 2>/dev/null` -eq `
+- test `mysql --host=127.0.0.1 --user=$MYSQL_USER --password=$MYSQL_PASSWORD $MYSQL_DATABASE -e "select count(*) from Campaign_Table" -BN 2>/dev/null` -eq 0
 
 after_success:
 - docker ps|grep mysql|awk '{print "docker stop " $1}'|bash
