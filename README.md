@@ -1,6 +1,6 @@
 # MDBtoMySQL
 
-Bash script that automates MS Access to MySQL, data migration.
+Bash script that automates MS Access to MySQL data migration using [mdbtools](https://github.com/brianb/mdbtools).
 
 ## Aim of the project
 

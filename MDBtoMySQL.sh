@@ -1,4 +1,21 @@
 #!/usr/bin/env bash
+#
+# Usage 1: Interactive
+#
+#   bash MDBtoMySQL.sh
+#   
+#   mysql host used is localhost
+#
+# Usage 2: Non-interactive
+#
+#   bash MDBtoMySQL.sh -m db.mdb -d movies -u user -p pass 
+#
+#   -m  path to mdb file
+#   -d  mysql database into which to import
+#   -u  mysql --username parameter
+#   -p  mysql --password parameter
+#   -h  mysql --host parameter
+#   -g  table name that requires "grep `date +%Y-%m-%d`" to save on time
 
 # Stuff for testing.
 # db_to_read='db.mdb';
@@ -11,6 +28,8 @@
 # mdb-tables	list tables in the specified file
 # mdb-schema	generate schema DDL for the specified file
 # mdb-export	generate CSV style output for a table
+
+#set -e
 
 echo "-- -----------------------------------------------------------------------";
 echo "-- MDBtoSQL";
@@ -29,27 +48,70 @@ echo "-- -----------------------------------------------------------------------
 command -v mdb-tables >/dev/null 2>&1 || { echo >&2 "I require mdb-tools but they are not installed. Aborting."; exit 1; }
 command -v mysql >/dev/null 2>&1 || { echo >&2 "I require MySQL but it is not installed. Aborting."; exit 1; }
 
+if [ $# -eq 1 ]; then
 # Get all the info you need.
 # sleep 1;
-echo "";
-echo "Please, provide the name of the MySQL user.";
-read user;
+  echo "";
+  echo "Please, provide the name of the MySQL user.";
+  read user;
 
-echo "";
-echo "Please, provide the password of the MySQL user.";
-read password;
+  echo "";
+  echo "Please, provide the password of the MySQL user.";
+  read password;
 
-echo "";
-echo "Please, provide the name of the mdb file.";
-echo "Make sure to provide the full path,
-if the file is not in the current directory.";
-read db_to_read;
+  echo "";
+  echo "Please, provide the name of the mdb file.";
+  echo "Make sure to provide the full path,
+  if the file is not in the current directory.";
+  read db_to_read;
 
-# Check the permissions/owner.
-if [[ ! -O "$db_to_read" ]]; then
-	echo "You are not the owner of this file. Aborting the operation.";
-	echo "";
-	exit 1;
+  echo "";
+  echo "Please, provide the name of the database that will be created.";
+  echo "Do not use spaces or any special characters:";
+  read db_to_create;
+
+  # Create the database.
+  echo "";
+  echo "!!! Attention !!!";
+  echo "If there already is a database with the same name, it is about to be deleted!!!";
+  echo "Press \"Y\" to confirm and continue.";
+  echo "Press \"N\" to abort the operation.";
+  read proceed;
+
+  # host parameter to mysql
+  host="localhost"
+  dropCreateDb=1
+  grepTable=""
+else
+    OPTIND=1         # Reset in case getopts has been used previously in the shell.
+
+    # http://stackoverflow.com/a/14203146/4126114
+    # http://mywiki.wooledge.org/BashFAQ/035#getopts
+    while getopts "m:d:u:p:h:" opt; do
+        case "$opt" in
+            m)  db_to_read=$OPTARG
+                ;;
+            d)  db_to_create=$OPTARG
+                ;;
+            u)  user=$OPTARG
+                ;;
+            p)  password=$OPTARG
+                ;;
+            h)  host=$OPTARG
+                ;;
+            g)  grepTable=$OPTARG
+                ;;
+        esac
+    done
+    shift "$((OPTIND-1))" # Shift off the options and optional --.
+    [ "$1" = "--" ] && shift
+
+    printf \
+      "Params:\n  mdb: %s\n  db: %s\n  user: %s\n  pass: %s\n  host: %s\n" \
+      "${db_to_read}" "${db_to_create}" "$user" "$password" "$host" >&2
+
+    proceed=Y
+    dropCreateDb=0
 fi
 
 # Check if the file exists.
@@ -57,6 +119,13 @@ if [[ ! -f "$db_to_read" ]]; then
 	echo "The file was not found.";
 	echo "Check the name and the path and try again.";
 	echo "Aborting.";
+	exit 1;
+fi
+
+# Check the permissions/owner.
+if [[ ! -O "$db_to_read" ]]; then
+	echo "You are not the owner of this file. Aborting the operation.";
+	echo "";
 	exit 1;
 fi
 
@@ -68,25 +137,12 @@ if [[ "$db_to_read" =~ [\],!,\\,@,#,$,%,^,\&,\*,\(,\),\?,\<,\>,{,},\[]+ ]] || [[
 	exit 1;
 fi
 
-echo "";
-echo "Please, provide the name of the database that will be created.";
-echo "Do not use spaces or any special characters:";
-read db_to_create;
-
 # Check the name provided.
 if [[ "$db_to_create" =~ [\],!,\\,@,#,$,%,^,\&,\*,\(,\),\?,\<,\>,{,},\[]+ ]] || [[ "$db_to_create" =~ [[:space:]]+ ]]; then
 	echo "No special characters or spaces are allowed in the database name.";
 	echo "Aborting.";
 	exit 1;
 fi
-
-# Create the database.
-echo "";
-echo "!!! Attention !!!";
-echo "If there already is a database with the same name, it is about to be deleted!!!";
-echo "Press \"Y\" to confirm and continue.";
-echo "Press \"N\" to abort the operation.";
-read proceed;
 
 if [[ $proceed == "y" ]] || [[ $proceed == "Y" ]]; then
     echo "Continuing";
@@ -99,71 +155,74 @@ else
 	exit 1;
 fi
 
-# Create the database.
-mysql -u$user -p$password -e "DROP DATABASE IF EXISTS $db_to_create";
-mysql -u$user -p$password -e "CREATE DATABASE $db_to_create DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;";
-echo "";
-echo "<------------------------------------------------------------------------>"
-echo "           Database \"$db_to_create\" was successfully created."
-echo "<------------------------------------------------------------------------>"
+# mysql cmd
+mysqlCmd="mysql --host=$host --user=$user --password=$password $db_to_create"
+printf "Connecting using cmd: %s\n" "$mysqlCmd"
+
+# Get the tables to start exporting the data.
+IFS=' ' read -ra tables <<< "$(mdb-tables "$db_to_read")"
+
+# drop and create
+if [ $dropCreateDb -eq 1 ]; then
+  # Create the database.
+  $mysqlCmd -e "DROP DATABASE IF EXISTS $db_to_create";
+  $mysqlCmd -e "CREATE DATABASE $db_to_create DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;";
+  echo "";
+  echo "<------------------------------------------------------------------------>"
+  echo "           Database \"$db_to_create\" was successfully created."
+  echo "<------------------------------------------------------------------------>"
+fi
 
 # Create the query that will create the tables.
-sql_query=$(
-mdb-schema db.mdb  \
-| sed 's/^)/,PRIMARY KEY (id)) ENGINE=InnoDB DEFAULT CHARSET=utf8/g' \
-| sed -r 's/(\[[a-zA-Z0-9]+)(\ )/\1_/g' \
-| sed "s/type.*/VARCHAR (255),/g" \
-| sed "s/\]//g" \
-| sed "s/\[//g" \
-| tr '/' '_' \
-| sed 's/Long\ Integer/INT UNSIGNED/g' \
-| sed 's/Integer/INT UNSIGNED/g' \
-| sed -r "s/Text \(.+\)/VARCHAR (255)/g" \
-| sed "s/Memo_Hyperlink\ (.*)/VARCHAR (255)/g" \
-| sed "s/ID/id/g" \
-| sed "s/Boolean/TINYINT UNSIGNED/g" \
-| sed "s/DateTime/DATE/g" \
-| sed "s/id INT UNSIGNED/id INT UNSIGNED AUTO_INCREMENT NOT NULL/g" \
-| sed "s/[[:space:]]\+/\ /g" \
-| awk 'NR >= 10'
-);
+mdb-schema $db_to_read mysql > .schema.txt.new
 
-# Execute the query.
-mysql -u"$user" -p"$password" -e "USE $db_to_create $sql_query";
+# just alert if schema changed
+if [ -f ".schema.txt" ]; then
+  diff .schema.txt .schema.txt.new 2>&1 > /dev/null
+  if [ $? -ne 0 ]; then
+    echo "schema changed!!!"
+  fi
+fi
+mv .schema.txt.new .schema.txt
+
+# drop tables
+for table in "${tables[@]}"; do
+  $mysqlCmd -e "DROP table if exists $db_to_create.$table";
+done
+
+# create tables
+cat .schema.txt | $mysqlCmd
 echo "";
 echo "<------------------------------------------------------------------------>"
 echo "           The tables of the \"$db_to_create\" database were successfully created."
 echo "<------------------------------------------------------------------------>"
 
 # Get the tables to start exporting the data.
-IFS=' ' read -ra tables <<< "$(mdb-tables "$db_to_read")"
 for table in "${tables[@]}"; do
-	# Create a csv file and modify the first line.
-	mdb-export db.mdb "$table" > "$table".csv && sed -i "1 s/\(.\+\)/INSERT INTO "$table" (\1) VALUES/g" "$table".csv;
 
-	# Get the total line number, to use it for the lines between the first and the last.
-	numbers=$(cat "$table.csv" | wc -l);
+  # get mdb-export version
+  mdbexv=`man mdb-export|tail -n 1|awk '{print $1}'`
+  if [ $mdbexv == "MDBTools" ]; then
+    mdbexv=`man mdb-export|tail -n 1|awk '{print $2}'`;
+  fi
 
-	# Remove parentheses.
-	# sed -i '2,$ s/(/[/g' "$table".csv; 
-	# sed -i '2,$ s/)/]/g' "$table".csv;
-
-	# Modify the lines between the first and the last.
-	sed -i "2,$((numbers-1)) s/\(.\+\)/\(\1),/g" "$table".csv;
-
-	# Modify the last line.
-	sed -i '$ s/\(.\+\)/\(\1);/g' "$table".csv;
-
-	# Lowercase any ID.
-	sed -i 's/ID/id/g' "$table".csv;
-	
-	# Remove times form former Datetime fields.
-	sed -i 's/\ 00:00:00//g' "$table".csv;
+	# Create a insert file
+  if [ $mdbexv == "0.7.1" ]; then
+		mdb-export -D "%Y-%m-%d %H:%M:%S" -I mysql -R ";\r\n" $db_to_read $table > "$table".sql
+    if [ "$table" == "$grepTable" ]; then
+      grep "`date +%Y-%m-%d`" "$table".sql > temp.sql
+      mv temp.sql "$table".sql
+    fi
+    cat "$table".sql | $mysqlCmd
+  else
+    echo "mdb-export version $mdbexv unsupported yet"
+    exit
+  fi
 
 	# Execute mysql queries.
-	mysql -u"$user" -p"$password" -e "TRUNCATE table $db_to_create.$table";
-	mysql -u"$user" -p"$password" -e "USE $db_to_create; $(cat $table.csv);";
+	$mysqlCmd -e "TRUNCATE table $db_to_create.$table";
+	cat "$table".sql | $mysqlCmd
 
 	# Remove the temp files.
-	rm "$table".csv; 
+	rm "$table".sql; 
 done

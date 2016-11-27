@@ -1,0 +1,44 @@
+sudo: required
+
+services:
+- docker
+
+before_install:
+# https://hub.docker.com/_/mysql/
+- docker run -d \
+  -p 3306:3306 \
+  -e MYSQL_RANDOM_ROOT_PASSWORD=yes \
+  -e MYSQL_USER=$MYSQL_USER \
+  -e MYSQL_PASSWORD=$MYSQL_PASSWORD \
+  -e MYSQL_DATABASE=$MYSQL_DATABASE \
+  mysql:8
+
+#   -e MYSQL_ALLOW_EMPTY_PASSWORD 
+#  -e MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD 
+
+install:
+- [ ! -f Campaign_Template1.mdb ]; then wget http://www.arialsoftware.com/uploads/9/1/8/3/9183466/campaign_template1.zip && unzip campaign_template1.zip && rm campaign_template1.zip; fi
+- apt-get install mdbtools mysql-client
+
+script:
+- bash MDBtoMySQL.sh \
+  -m Campaign_Template.mdb \
+  -d $MYSQL_DATABASE \
+  -u $MYSQL_USER \
+  -p $MYSQL_PASSWORD \
+  -h 127.0.0.1
+  -g acc_monitor_log # CHECKINOUT
+
+after_success:
+- docker ps|grep mysql|awk '{print "docker stop " $1}'|bash
+
+env:
+  global:
+#  - MYSQL_ROOT_PASSWORD=my-secret-pw
+  - MYSQL_USER=ffaFingerprints
+  - MYSQL_PASSWORD=fp1298
+  - MYSQL_DATABASE=movies
+
+branches:
+  only:
+  - master
