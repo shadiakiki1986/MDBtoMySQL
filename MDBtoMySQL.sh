@@ -227,4 +227,12 @@ for table in "${tables[@]}"; do
 
 	# Remove the temp files.
 	rm "$table".sql; 
+
+  echo "Copied table $db_to_create.$table"
 done
+
+echo "";
+echo "<------------------------------------------------------------------------>"
+echo "           Done"
+echo "<------------------------------------------------------------------------>"
+
