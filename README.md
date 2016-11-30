@@ -19,10 +19,10 @@ bash MDBtoMySQL.sh
 ```
 
 Then the user is prompted asks for some basic input.
- * The credentials of the mysql user, in order to run the queries.
- * The name of the MS Access db (file).
- * The name of the database that you want to create.
- * Note that the mysql host used is `localhost`
+* The credentials of the mysql user, in order to run the queries.
+* The name of the MS Access db (file).
+* The name of the database that you want to create.
+* Note that the mysql host used is `localhost`
 
 2. Non-interactive usage:
 ```bash
@@ -35,6 +35,7 @@ where
 * -p  mysql --password parameter
 * -h  mysql --host parameter
 * -g  table name that requires "grep `date +%Y-%m-%d`" to save on processing time
+* -t  table names to copy. Skip to copy everything
 
 ## Contribute
 

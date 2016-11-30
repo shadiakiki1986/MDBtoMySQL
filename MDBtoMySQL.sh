@@ -70,9 +70,14 @@ if [ $# -eq 1 ]; then
 else
     OPTIND=1         # Reset in case getopts has been used previously in the shell.
 
+    # create empty array
+    # Example 27-6. Some special properties of arrays
+    # http://www.tldp.org/LDP/abs/html/arrays.html
+    declare -a tablesToImport
+
     # http://stackoverflow.com/a/14203146/4126114
     # http://mywiki.wooledge.org/BashFAQ/035#getopts
-    while getopts "m:d:u:p:h:g:" opt; do
+    while getopts "m:d:u:p:h:g:t:" opt; do
         case "$opt" in
             m)  db_to_read=$OPTARG
                 ;;
@@ -85,6 +90,9 @@ else
             h)  host=$OPTARG
                 ;;
             g)  grepTable=$OPTARG
+                ;;
+            t)  # http://stackoverflow.com/a/918931/4126114
+                IFS=',' read -ra tablesToImport <<< "$OPTARG"
                 ;;
         esac
     done
@@ -115,14 +123,6 @@ if [[ ! -O "$db_to_read" ]]; then
 fi
 
 # Check the name provided.
-if [[ "$db_to_read" =~ [\],!,\\,@,#,$,%,^,\&,\*,\(,\),\?,\<,\>,{,},\[]+ ]] || [[ "$db_to_read" =~ [[:space:]]+ ]]; then
-	echo "It is preferable to not include any special characters or spaces in the name.";
-	echo "Please, rename the file and try again.";
-	echo "Aborting.";
-	exit 1;
-fi
-
-# Check the name provided.
 if [[ "$db_to_create" =~ [\],!,\\,@,#,$,%,^,\&,\*,\(,\),\?,\<,\>,{,},\[]+ ]] || [[ "$db_to_create" =~ [[:space:]]+ ]]; then
 	echo "No special characters or spaces are allowed in the database name.";
 	echo "Aborting.";
@@ -141,11 +141,32 @@ else
 fi
 
 # mysql cmd
-mysqlCmd="mysql --host=$host --user=$user --password=$password $db_to_create"
+# setting password in env var to avoid warning about insecurity of using a password on the command-line
+# quote: mysql: [Warning] Using a password on the command line interface can be insecure.
+# http://serverfault.com/a/476286
+export MYSQL_PWD=$password
+mysqlCmd="mysql --host=$host --user=$user $db_to_create" #  --password=$password
 printf "Connecting using cmd: %s\n" "$mysqlCmd"
 
 # Get the tables to start exporting the data.
 IFS=' ' read -ra tables <<< "$(mdb-tables "$db_to_read")"
+
+# if tablesToImport is not empty, filter tables for those that are there
+# http://unix.stackexchange.com/a/104848
+if [ ${#tablesToImport[@]} -gt 0 ]; then
+  echo "Tables are"
+  echo ${tables[@]}          # echo ${colors[*]} also works.
+
+  echo "sorted are"
+  sorted=($(printf '%s\n' "${tables[@]}"|LC_ALL=C sort -f))
+  echo ${sorted[@]}
+
+  echo "Filtering tables for those requested"
+  tablesCommon=($(comm -12 <(printf '%s\n' "${tables[@]}"|LC_ALL=C sort -f) <(printf '%s\n' "${tablesToImport[@]}"|LC_ALL=C sort -f)))
+  tables=tablesCommon
+  echo "Tables filtered down to"
+  echo ${tables[@]}          # echo ${colors[*]} also works.
+fi
 
 # drop and create
 if [ $dropCreateDb -eq 1 ]; then
@@ -159,7 +180,7 @@ if [ $dropCreateDb -eq 1 ]; then
 fi
 
 # Create the query that will create the tables.
-mdb-schema $db_to_read mysql > .schema.txt.new
+mdb-schema "$db_to_read" mysql > .schema.txt.new
 
 # alert if schema changed
 # doesnt work with set -e on top
@@ -172,9 +193,10 @@ mdb-schema $db_to_read mysql > .schema.txt.new
 
 mv .schema.txt.new .schema.txt
 
-# drop tables
+# drop tables, but only those in tablesToImport
 for table in "${tables[@]}"; do
   $mysqlCmd -e "DROP table if exists $db_to_create.$table";
+  echo "Dropped table $db_to_create.$table"
 done
 
 # create tables
@@ -186,6 +208,7 @@ echo "<------------------------------------------------------------------------>
 
 # Get the tables to start exporting the data.
 for table in "${tables[@]}"; do
+  echo "Copying table $db_to_create.$table"
 
   # get mdb-export version
   mdbexv=`man mdb-export|tail -n 1|awk '{print $1}'`
@@ -195,7 +218,7 @@ for table in "${tables[@]}"; do
 
 	# Create a insert file
   if [ $mdbexv == "0.7.1" ]; then
-		mdb-export -D "%Y-%m-%d %H:%M:%S" -I mysql -R ";\r\n" $db_to_read $table > "$table".sql
+		mdb-export -D "%Y-%m-%d %H:%M:%S" -I mysql -R ";\r\n" "$db_to_read" $table > "$table".sql
     if [ "$table" == "$grepTable" ]; then
       grep "`date +%Y-%m-%d`" "$table".sql > temp.sql
       mv temp.sql "$table".sql
