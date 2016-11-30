@@ -1,21 +1,6 @@
 #!/usr/bin/env bash
 #
-# Usage 1: Interactive
-#
-#   bash MDBtoMySQL.sh
-#   
-#   mysql host used is localhost
-#
-# Usage 2: Non-interactive
-#
-#   bash MDBtoMySQL.sh -m db.mdb -d movies -u user -p pass 
-#
-#   -m  path to mdb file
-#   -d  mysql database into which to import
-#   -u  mysql --username parameter
-#   -p  mysql --password parameter
-#   -h  mysql --host parameter
-#   -g  table name that requires "grep `date +%Y-%m-%d`" to save on time
+# Usage: Check README.md in repository
 
 # Stuff for testing.
 # db_to_read='db.mdb';
@@ -39,8 +24,8 @@ echo "-- Licensed under the MIT licence.";
 echo "-- For more info, check out https://github.com/Vaggos/MDBtoMySQL";
 echo "-- ";
 echo "-- Usage info:";
-echo "-- This script presupposes that \"mdbtools\" are installed in your system.";
-echo "-- If not, install them with \"sudo apt-get install mdbtools\" in a Debian";
+echo "-- This script presupposes that \"mdbtools\" and a \"mysql\" client are installed in your system.";
+echo "-- If not, install them with \"sudo apt-get install mdbtools mysql-client\" in a Debian";
 echo "-- or Debian-based system.";
 echo "-- -----------------------------------------------------------------------";
 
