@@ -190,11 +190,15 @@ echo "<------------------------------------------------------------------------>
 # if tablesToImport is not empty, filter tables for those that are there
 # http://unix.stackexchange.com/a/104848
 if [ ${#tablesToImport[@]} -gt 0 ]; then
+
+  # 2016-12-01 TODO: doesnt seem to work in dockerfile
   # Note on sort below: need to sort by ignoring case (-i) and dictionary order (-d, i.e. ignore underscores)
-  echo "Filtering tables for those requested"
-  tables=($(comm -12 <(printf '%s\n' "${tablesToImport[@]}"|LC_ALL=C sort -f -d) <(printf '%s\n' "${tables[@]}"|LC_ALL=C sort -f -d)))
-  echo "Tables filtered down to"
-  echo ${tables[@]}          # echo ${colors[*]} also works.
+  #echo "Filtering tables for those requested"
+  #tables=($(comm -12 <(printf '%s\n' "${tablesToImport[@]}"|LC_ALL=C sort -f -d) <(printf '%s\n' "${tables[@]}"|LC_ALL=C sort -f -d)))
+  #echo "Tables filtered down to"
+  #echo ${tables[@]}          # echo ${colors[*]} also works.
+
+  tables=($(printf '%s\n' "${tablesToImport[@]}"))
 fi
 
 # create tables
