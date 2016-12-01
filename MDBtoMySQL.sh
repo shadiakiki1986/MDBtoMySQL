@@ -151,23 +151,6 @@ printf "Connecting using cmd: %s\n" "$mysqlCmd"
 # Get the tables to start exporting the data.
 IFS=' ' read -ra tables <<< "$(mdb-tables "$db_to_read")"
 
-# if tablesToImport is not empty, filter tables for those that are there
-# http://unix.stackexchange.com/a/104848
-if [ ${#tablesToImport[@]} -gt 0 ]; then
-  echo "Tables are"
-  echo ${tables[@]}          # echo ${colors[*]} also works.
-
-  echo "sorted are"
-  sorted=($(printf '%s\n' "${tables[@]}"|LC_ALL=C sort -f))
-  echo ${sorted[@]}
-
-  echo "Filtering tables for those requested"
-  tablesCommon=($(comm -12 <(printf '%s\n' "${tables[@]}"|LC_ALL=C sort -f) <(printf '%s\n' "${tablesToImport[@]}"|LC_ALL=C sort -f)))
-  tables=tablesCommon
-  echo "Tables filtered down to"
-  echo ${tables[@]}          # echo ${colors[*]} also works.
-fi
-
 # drop and create
 if [ $dropCreateDb -eq 1 ]; then
   # Create the database.
@@ -196,8 +179,23 @@ mv .schema.txt.new .schema.txt
 # drop tables, but only those in tablesToImport
 for table in "${tables[@]}"; do
   $mysqlCmd -e "DROP table if exists $db_to_create.$table";
-  echo "Dropped table $db_to_create.$table"
+  # echo "Dropped table $db_to_create.$table"
 done
+
+echo "";
+echo "<------------------------------------------------------------------------>"
+echo "           Dropped tables if existant"
+echo "<------------------------------------------------------------------------>"
+
+# if tablesToImport is not empty, filter tables for those that are there
+# http://unix.stackexchange.com/a/104848
+if [ ${#tablesToImport[@]} -gt 0 ]; then
+  # Note on sort below: need to sort by ignoring case (-i) and dictionary order (-d, i.e. ignore underscores)
+  echo "Filtering tables for those requested"
+  tables=($(comm -12 <(printf '%s\n' "${tablesToImport[@]}"|LC_ALL=C sort -f -d) <(printf '%s\n' "${tables[@]}"|LC_ALL=C sort -f -d)))
+  echo "Tables filtered down to"
+  echo ${tables[@]}          # echo ${colors[*]} also works.
+fi
 
 # create tables
 cat .schema.txt | $mysqlCmd
@@ -206,23 +204,31 @@ echo "<------------------------------------------------------------------------>
 echo "           The tables of the \"$db_to_create\" database were successfully created."
 echo "<------------------------------------------------------------------------>"
 
+# get mdb-export version
+mdbexv=`man mdb-export|tail -n 1|awk '{print $1}'`
+if [ $mdbexv == "MDBTools" ]; then
+  mdbexv=`man mdb-export|tail -n 1|awk '{print $2}'`;
+fi
+
 # Get the tables to start exporting the data.
 for table in "${tables[@]}"; do
   echo "Copying table $db_to_create.$table"
-
-  # get mdb-export version
-  mdbexv=`man mdb-export|tail -n 1|awk '{print $1}'`
-  if [ $mdbexv == "MDBTools" ]; then
-    mdbexv=`man mdb-export|tail -n 1|awk '{print $2}'`;
-  fi
 
 	# Create a insert file
   if [ $mdbexv == "0.7.1" ]; then
 		mdb-export -D "%Y-%m-%d %H:%M:%S" -I mysql -R ";\r\n" "$db_to_read" $table > "$table".sql
     if [ "$table" == "$grepTable" ]; then
+      echo "grepping table $table for date"
       grep "`date +%Y-%m-%d`" "$table".sql > temp.sql
       mv temp.sql "$table".sql
     fi
+
+    # issue with DEPARTMENTS table, 1st entry has illegal NULL
+    if [ "$table" == "DEPARTMENTS" ]; then
+      grep -v "OUR COMPANY" "$table".sql > temp.sql
+      mv temp.sql "$table".sql
+    fi
+
     cat "$table".sql | $mysqlCmd
   else
     echo "mdb-export version $mdbexv unsupported yet"
