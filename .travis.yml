@@ -34,7 +34,7 @@ before_script:
   -m Campaign_Template.mdb
   -d $MYSQL_DATABASE
   -u $MYSQL_USER
-  -p $MYSQL_PASSWORD
+  -p "$MYSQL_PASSWORD"
   -h 127.0.0.1
   -g acc_monitor_log # CHECKINOUT
 

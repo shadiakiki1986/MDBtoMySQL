@@ -144,7 +144,7 @@ fi
 # setting password in env var to avoid warning about insecurity of using a password on the command-line
 # quote: mysql: [Warning] Using a password on the command line interface can be insecure.
 # http://serverfault.com/a/476286
-export MYSQL_PWD=$password
+export MYSQL_PWD="$password"
 mysqlCmd="mysql --host=$host --user=$user $db_to_create" #  --password=$password
 printf "Connecting using cmd: %s\n" "$mysqlCmd"
 
