@@ -201,29 +201,34 @@ if [ ${#tablesToImport[@]} -gt 0 ]; then
   tables=($(printf '%s\n' "${tablesToImport[@]}"))
 fi
 
-# create tables
-cat .schema.txt | $mysqlCmd
-echo "";
-echo "<------------------------------------------------------------------------>"
-echo "           The tables of the \"$db_to_create\" database were successfully created."
-echo "<------------------------------------------------------------------------>"
-
 # get mdb-export version
 mdbexv=`man mdb-export|tail -n 1|awk '{print $1}'`
 if [ $mdbexv == "MDBTools" ]; then
   mdbexv=`man mdb-export|tail -n 1|awk '{print $2}'`;
 fi
 
+# version 0.7.1 latest commit 2013
+# https://github.com/brianb/mdbtools/tree/0.7.1
+# version 0.7~rc1 latest commit 2011
+# https://github.com/brianb/mdbtools/tree/0.7_rc1
+if [ $mdbexv != "0.7.1" ] && [ $mdbexv != "0.7~rc1" ]; then
+  echo "mdb-export version $mdbexv unsupported yet"
+  exit 1
+fi
+
+# create tables
+# Note on COMMENT ON COLUMN below: these extra lines were showing up in the schema when running on travis-ci
+cat .schema.txt | grep -v "^COMMENT ON " | $mysqlCmd
+echo "";
+echo "<------------------------------------------------------------------------>"
+echo "           The tables of the \"$db_to_create\" database were successfully created."
+echo "<------------------------------------------------------------------------>"
+
 # Get the tables to start exporting the data.
 for table in "${tables[@]}"; do
   echo "Copying table $db_to_create.$table"
 
-	# Create a insert file
-  if [ $mdbexv != "0.7.1" ]; then
-    echo "mdb-export version $mdbexv unsupported yet"
-    exit 1
-  fi
-
+  # Create a insert file
   mdb-export -D "%Y-%m-%d %H:%M:%S" -I mysql -R ";\r\n" "$db_to_read" $table > "$table".sql
   if [ "$table" == "$grepTable" ]; then
     echo "grepping table $table for date"
