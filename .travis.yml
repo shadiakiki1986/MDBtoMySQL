@@ -7,10 +7,14 @@ services:
 - mysql
 
 before_install:
-- if [ ! -f Campaign_Template1.mdb ]; then
-    wget "http://www.arialsoftware.com/uploads/9/1/8/3/9183466/campaign_template1.zip"
-    && unzip campaign_template1.zip
-    && rm campaign_template1.zip;
+#- if [ ! -f Campaign_Template1.mdb ]; then
+#    wget "http://www.arialsoftware.com/uploads/9/1/8/3/9183466/campaign_template1.zip"
+#    && unzip campaign_template1.zip
+#    && mv Campaign_Template.mdb Access.mdb
+#    && rm campaign_template1.zip;
+#  fi
+- if [ ! -f Access.mdb ]; then
+    wget "https://s3-us-west-2.amazonaws.com/ffa-hubot/Access.mdb";
   fi
 - sudo apt-get -qq update && sudo apt-get -qq -y install mdbtools # mysql-client # already available on travis: mysql-client
 
@@ -31,12 +35,13 @@ before_script:
 - mysql -e "create database $MYSQL_DATABASE"
 # - sleep 30 # wait till mysql server is done initializing
 - bash MDBtoMySQL.sh
-  -m Campaign_Template.mdb
+  -m Access.mdb
   -d $MYSQL_DATABASE
   -u $MYSQL_USER
   -p "$MYSQL_PASSWORD"
   -h 127.0.0.1
-  -g acc_monitor_log # CHECKINOUT
+  -g acc_monitor_log
+  -t acc_monitor_log,DEPARTMENTS,USERINFO
 
 script:
 - res1=`
@@ -44,19 +49,19 @@ script:
         --user=$MYSQL_USER
         --password=$MYSQL_PASSWORD
         $MYSQL_DATABASE
-        -e "select count(*) from information_schema.TABLES where TABLE_NAME='Campaign_Table'"
+        -e "select count(*) from information_schema.TABLES where TABLE_NAME='DEPARTMENTS'"
         -BN 2>/dev/null
-  `
+  ` # Campaign_Template.mdb: Campaign_Table instead of DEPARTMENTS
 - test "$res1" == "1"
 - res2=`
   mysql --host=127.0.0.1
         --user=$MYSQL_USER
         --password=$MYSQL_PASSWORD
         $MYSQL_DATABASE
-        -e "select count(*) from Campaign_Table"
+        -e "select count(*) from DEPARTMENTS"
         -BN 2>/dev/null
-  `
-- test "$res2" == "0"
+  ` # Campaign_Template.mdb: Campaign_Table instead of DEPARTMENTS, and test "$res2" == "0"
+- test $res2 -gt 0
 
 after_success:
 - docker ps|grep mysql|awk '{print "docker stop " $1}'|bash
