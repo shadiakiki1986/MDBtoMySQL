@@ -219,33 +219,33 @@ for table in "${tables[@]}"; do
   echo "Copying table $db_to_create.$table"
 
 	# Create a insert file
-  if [ $mdbexv == "0.7.1" ]; then
-		mdb-export -D "%Y-%m-%d %H:%M:%S" -I mysql -R ";\r\n" "$db_to_read" $table > "$table".sql
-    if [ "$table" == "$grepTable" ]; then
-      echo "grepping table $table for date"
-      grep "`date +%Y-%m-%d`" "$table".sql > temp.sql && mv temp.sql "$table".sql || echo "No matching lines"
-    fi
-
-    # issue with DEPARTMENTS table, 1st entry has illegal NULL
-    if [ "$table" == "DEPARTMENTS" ]; then
-      grep -v "OUR COMPANY" "$table".sql > temp.sql
-      mv temp.sql "$table".sql
-    fi
-
-    cat "$table".sql | $mysqlCmd
-  else
+  if [ $mdbexv != "0.7.1" ]; then
     echo "mdb-export version $mdbexv unsupported yet"
-    exit
+    exit 1
+  fi
+
+  mdb-export -D "%Y-%m-%d %H:%M:%S" -I mysql -R ";\r\n" "$db_to_read" $table > "$table".sql
+  if [ "$table" == "$grepTable" ]; then
+    echo "grepping table $table for date"
+    grep "`date +%Y-%m-%d`" "$table".sql > temp.sql && mv temp.sql "$table".sql \
+      || echo "No data to copy from $table" && rm "$table".sql
+  fi
+
+  # issue with DEPARTMENTS table, 1st entry has illegal NULL
+  if [ "$table" == "DEPARTMENTS" ]; then
+    grep -v "OUR COMPANY" "$table".sql > temp.sql
+    mv temp.sql "$table".sql
   fi
 
 	# Execute mysql queries.
 	$mysqlCmd -e "TRUNCATE table $db_to_create.$table";
-	cat "$table".sql | $mysqlCmd
 
-	# Remove the temp files.
-	rm "$table".sql; 
+  if [ -f "$table".sql ]; then
+	  cat "$table".sql | $mysqlCmd
+	  rm "$table".sql;
+    echo "Copied table $db_to_create.$table"
+  fi
 
-  echo "Copied table $db_to_create.$table"
 done
 
 echo "";
