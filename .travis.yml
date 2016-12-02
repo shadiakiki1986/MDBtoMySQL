@@ -3,29 +3,33 @@ language:
 - ruby
 
 services:
-- docker
+# - docker
+- mysql
 
-# https://hub.docker.com/_/mysql/
 before_install:
 - if [ ! -f Campaign_Template1.mdb ]; then
     wget "http://www.arialsoftware.com/uploads/9/1/8/3/9183466/campaign_template1.zip"
     && unzip campaign_template1.zip
     && rm campaign_template1.zip;
   fi
-- sudo apt-get install mdbtools mysql-client
-- docker run -d
-  -p 3306:3306
-  -e MYSQL_RANDOM_ROOT_PASSWORD=yes
-  -e MYSQL_USER=$MYSQL_USER
-  -e MYSQL_PASSWORD=$MYSQL_PASSWORD
-  -e MYSQL_DATABASE=$MYSQL_DATABASE
-  mysql:8
+- sudo apt-get -qq update && sudo apt-get -qq -y install mdbtools # mysql-client # already available on travis: mysql-client
 
-#   -e MYSQL_ALLOW_EMPTY_PASSWORD 
-#  -e MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD 
+# https://hub.docker.com/_/mysql/
+#- docker run -d
+#  -p 3306:3306
+#  -e MYSQL_RANDOM_ROOT_PASSWORD=yes
+#  -e MYSQL_USER=$MYSQL_USER
+#  -e MYSQL_PASSWORD=$MYSQL_PASSWORD
+#  -e MYSQL_DATABASE=$MYSQL_DATABASE
+#  mysql:8
+#
+# more options
+##   -e MYSQL_ALLOW_EMPTY_PASSWORD
+##  -e MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD
 
 before_script:
-- sleep 30 # wait till mysql server is done initializing
+- mysql -e "create database $MYSQL_DATABASE"
+# - sleep 30 # wait till mysql server is done initializing
 - bash MDBtoMySQL.sh
   -m Campaign_Template.mdb
   -d $MYSQL_DATABASE
@@ -36,20 +40,20 @@ before_script:
 
 script:
 - res1=`
-  mysql --host=127.0.0.1 
-        --user=$MYSQL_USER 
+  mysql --host=127.0.0.1
+        --user=$MYSQL_USER
         --password=$MYSQL_PASSWORD
-        $MYSQL_DATABASE 
+        $MYSQL_DATABASE
         -e "select count(*) from information_schema.TABLES where TABLE_NAME='Campaign_Table'"
         -BN 2>/dev/null
   `
 - test "$res1" == "1"
 - res2=`
-  mysql --host=127.0.0.1 
-        --user=$MYSQL_USER 
+  mysql --host=127.0.0.1
+        --user=$MYSQL_USER
         --password=$MYSQL_PASSWORD
-        $MYSQL_DATABASE 
-        -e "select count(*) from Campaign_Table" 
+        $MYSQL_DATABASE
+        -e "select count(*) from Campaign_Table"
         -BN 2>/dev/null
   `
 - test "$res2" == "0"
@@ -60,8 +64,8 @@ after_success:
 #  - MYSQL_ROOT_PASSWORD=my-secret-pw
 env:
   global:
-  - MYSQL_USER=ffaFingerprints
-  - MYSQL_PASSWORD=fp1298
+  - MYSQL_USER=root
+  - MYSQL_PASSWORD=""
   - MYSQL_DATABASE=movies
 
 branches:
