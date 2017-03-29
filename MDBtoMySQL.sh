@@ -236,13 +236,19 @@ for table in "${tables[@]}"; do
       || echo "No data to copy from $table" && rm "$table".sql
   fi
 
-  # issue with DEPARTMENTS table, 1st entry has illegal NULL
   if [ "$table" == "DEPARTMENTS" ]; then
-    grep -v "OUR COMPANY" "$table".sql > temp.sql
-    mv temp.sql "$table".sql
+    echo "# issue with DEPARTMENTS table, 1st entry has illegal NULL"
+    # || is needed below because of "set -e" on top in order to avoid the file getting halted
+    # Also note that grep will return non-zero if "Company Name" is not found, OR if it is the only one found (and hence resulting in no matched lines)
+    (    grep -v "Company Name" "$table".sql > temp.sql \
+      && mv temp.sql "$table".sql
+    ) || (
+         echo "No department called 'Company Name' found OR 'Company Name' is the only department. Either way, aborting import DEPARTMENTS table" \
+      && rm "$table".sql
+    )
   fi
 
-	# Execute mysql queries.
+	echo "# Execute mysql queries."
 	$mysqlCmd -e "TRUNCATE table $db_to_create.$table";
 
   if [ -f "$table".sql ]; then
