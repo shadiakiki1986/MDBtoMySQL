@@ -149,7 +149,7 @@ mysqlCmd="mysql --host=$host --user=$user $db_to_create" #  --password=$password
 printf "Connecting using cmd: %s\n" "$mysqlCmd"
 
 # Get the tables to start exporting the data.
-IFS=' ' read -ra tables <<< "$(mdb-tables "$db_to_read")"
+IFS=',' read -ra tables <<< "$(mdb-tables -d , "$db_to_read")"
 
 # drop and create
 if [ $dropCreateDb -eq 1 ]; then
@@ -178,8 +178,10 @@ mv .schema.txt.new .schema.txt
 
 # drop tables, but only those in tablesToImport
 for table in "${tables[@]}"; do
-  $mysqlCmd -e "DROP table if exists $db_to_create.$table";
-  # echo "Dropped table $db_to_create.$table"
+  cmd="DROP table if exists $db_to_create.\`$table\`"
+  echo "executing: $cmd"
+  $mysqlCmd -e "$cmd";
+  echo "done"
 done
 
 echo "";
@@ -216,7 +218,7 @@ if [ $mdbexv != "0.7.1" ] && [ $mdbexv != "0.7~rc1" ]; then
   exit 1
 fi
 
-# create tables
+echo "# create tables"
 # Note on COMMENT ON COLUMN below: these extra lines were showing up in the schema when running on travis-ci
 cat .schema.txt | grep -v "^COMMENT ON " | $mysqlCmd
 echo "";
