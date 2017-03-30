@@ -179,9 +179,9 @@ mv .schema.txt.new .schema.txt
 # drop tables, but only those in tablesToImport
 for table in "${tables[@]}"; do
   cmd="DROP table if exists $db_to_create.\`$table\`"
-  echo "executing: $cmd"
+  #echo "executing: $cmd"
   $mysqlCmd -e "$cmd";
-  echo "done"
+  #echo "done"
 done
 
 echo "";
