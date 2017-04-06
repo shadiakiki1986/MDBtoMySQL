@@ -234,8 +234,8 @@ for table in "${tables[@]}"; do
   mdb-export -D "%Y-%m-%d %H:%M:%S" -I mysql -R ";\r\n" "$db_to_read" $table > "$table".sql
   if [ "$table" == "$grepTable" ]; then
     echo "grepping table $table for date"
-    grep "`date +%Y-%m-%d`" "$table".sql > temp.sql && mv temp.sql "$table".sql \
-      || echo "No data to copy from $table" && rm "$table".sql
+    ( grep "`date +%Y-%m-%d`" "$table".sql > temp.sql && mv temp.sql "$table".sql ) \
+      || ( echo "No data to copy from $table" && rm "$table".sql )
   fi
 
   if [ "$table" == "DEPARTMENTS" ]; then
